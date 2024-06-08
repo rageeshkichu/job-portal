@@ -208,3 +208,41 @@ def approve_employer(request):
             return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
     else:
         return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
+    
+
+
+@csrf_exempt
+def all_seekers(request):
+    if request.method == 'GET':
+        seekers = ApprovedSeeker.objects.all()
+        seekers_data = []
+        for seeker in seekers:
+            seekers_data.append({
+                'id': seeker.id,
+                'name': seeker.name,
+                'email': seeker.email,
+                'mobile': seeker.mobile,
+                'dob': seeker.dob
+                # Add other fields as necessary
+            })
+        return JsonResponse(seekers_data, safe=False)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+@csrf_exempt
+def all_employers(request):
+    if request.method == 'GET':
+        employers = ApprovedEmployer.objects.all()
+        employers_data = []
+        for employer in employers:
+            employers_data.append({
+                'id': employer.id,
+                'name': employer.name,
+                'email': employer.email,
+                'mobile': employer.mobile,
+                'website': employer.website,
+                'address':employer.address
+                # Add other fields as necessary
+            })
+        return JsonResponse(employers_data, safe=False)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
