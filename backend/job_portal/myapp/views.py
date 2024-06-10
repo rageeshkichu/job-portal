@@ -10,6 +10,9 @@ from .Serializers import EmployerSerializer
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
 
 
 @csrf_exempt
@@ -142,20 +145,21 @@ def approve_seeker(request):
             try:
                 seeker = Seeker.objects.get(id=seeker_id)
                 # Create a new ApprovedSeeker with the same details
+                custom_seeker, created = CustomUser.objects.get_or_create(
+                    username=seeker.name,
+                    email=seeker.email,
+                    password= make_password(seeker.password),
+                    user_type=seeker.user_type
+                )
                 approved_seeker, created = ApprovedSeeker.objects.get_or_create(
                     name=seeker.name,
                     email=seeker.email,
                     mobile=seeker.mobile,
                     password=seeker.password,
                     dob=seeker.dob,
-                    user_type=seeker.user_type
+                    user_type=custom_seeker
                 )
-                approved_seeker, created = CustomUser.objects.get_or_create(
-                    username=seeker.name,
-                    email=seeker.email,
-                    password=seeker.password,
-                    user_type=seeker.user_type
-                )
+                
                 if created:
                     # Delete the seeker from the Seeker table
                     seeker.delete()
@@ -180,6 +184,12 @@ def approve_employer(request):
             try:
                 employer = Employer.objects.get(id=employer_id)
                 # Create a new ApprovedEmployer with the same details
+                custom_employer, created = CustomUser.objects.get_or_create(
+                    username=employer.name,
+                    email=employer.email,
+                    password=employer.password,
+                    user_type=employer.user_type
+                )
                 approved_employer, created = ApprovedEmployer.objects.get_or_create(
                     name=employer.name,
                     email=employer.email,
@@ -188,14 +198,9 @@ def approve_employer(request):
                     logo=employer.logo,
                     website=employer.website,
                     address=employer.address,
-                    user_type=employer.user_type
+                    user_type= custom_employer
                 )
-                approved_employer, created = CustomUser.objects.get_or_create(
-                    username=employer.name,
-                    email=employer.email,
-                    password=employer.password,
-                    user_type=employer.user_type
-                )
+                
                 if created:
                     # Optionally, you can delete the original employer
                     employer.delete()
@@ -246,3 +251,117 @@ def all_employers(request):
             })
         return JsonResponse(employers_data, safe=False)
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+@csrf_exempt
+def reject_seeker(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            seeker_id = data.get('seeker_id')
+            if not seeker_id:
+                return JsonResponse({'success': False, 'message': 'Seeker ID not provided'}, status=400)
+            try:
+                seeker = Seeker.objects.get(id=seeker_id)
+                seeker.delete()
+                return JsonResponse({'success': True, 'message': 'Seeker rejected successfully'})
+            except Seeker.DoesNotExist:
+                return JsonResponse({'success': False, 'message': 'Seeker not found'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
+    
+
+@csrf_exempt
+def reject_employer(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            employer_id = data.get('employer_id')
+            if not employer_id:
+                return JsonResponse({'success': False, 'message': 'Employer ID not provided'}, status=400)
+            try:
+                employer = Employer.objects.get(id=employer_id)
+                employer.delete()
+                return JsonResponse({'success': True, 'message': 'employer rejected successfully'})
+            except Seeker.DoesNotExist:
+                return JsonResponse({'success': False, 'message': 'Employer not found'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
+    
+@csrf_exempt
+def remove_employer(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            employer_id = data.get('employer_id')
+            if not employer_id:
+                return JsonResponse({'success': False, 'message': 'Employer ID not provided'}, status=400)
+            try:
+                employer = ApprovedEmployer.objects.get(id=employer_id)
+                user_type = employer.user_type
+                employer.delete()
+                user_type.delete()
+                return JsonResponse({'success': True, 'message': 'employer deleted successfully'})
+            except Seeker.DoesNotExist:
+                return JsonResponse({'success': False, 'message': 'Employer not found'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
+    
+
+@csrf_exempt
+def remove_seeker(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            seeker_id = data.get('seeker_id')
+            if not seeker_id:
+                return JsonResponse({'success': False, 'message': 'Seeker ID not provided'}, status=400)
+            try:
+                seeker = ApprovedSeeker.objects.get(id=seeker_id)
+                user_type = seeker.user_type
+                seeker.delete()
+                user_type.delete()
+                return JsonResponse({'success': True, 'message': 'employer deleted successfully'})
+            except Seeker.DoesNotExist:
+                return JsonResponse({'success': False, 'message': 'Employer not found'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
+
+@login_required
+def get_admin_details(request):
+    user = request.user
+    if user.is_authenticated:
+        print(f"Authenticated user: {user.username}")
+    else:
+        print("User is not authenticated")
+    return JsonResponse({
+        'username': user.username,
+        'email': user.email if user.email else 'no email registered'
+    })
+
+@csrf_exempt
+@login_required
+def update_admin_details(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user = request.user
+            user.username = data.get('username', user.username)
+            email = data.get('email', '').strip()
+            user.email = email if email != 'no email registered' else ''
+            user.save()
+            return JsonResponse({'success': True, 'message': 'Profile updated successfully'})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
+
+    
