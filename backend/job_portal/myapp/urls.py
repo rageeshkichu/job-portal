@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path,include
 from . import views
 from .views import register_seeker,register_employer,admin_login,get_seekers,get_employers,approve_seeker,approve_employer,all_seekers,all_employers
 
@@ -18,4 +18,7 @@ urlpatterns = [
     path('api/remove_seeker/', views.remove_seeker, name='remove_seeker'),
     path('api/admin-details/', views.get_admin_details, name='admin-details'),
     path('api/update-admin/', views.update_admin_details, name='update-admin'),
+    path('api/auth/', include('rest_framework.urls')),
+    path('api/token/', include('djoser.urls.authtoken')),
+    path('api/reset-password/', views.reset_password, name='reset-password'),
 ]

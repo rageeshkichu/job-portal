@@ -8,11 +8,18 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .Serializers import EmployerSerializer
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 from django.utils.decorators import method_decorator
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
+from rest_framework.authtoken.models import Token
+from django.contrib.auth.models import update_last_login
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from django.views.decorators.csrf import csrf_protect
 
 
 @csrf_exempt
@@ -68,7 +75,6 @@ def register_employer(request):
 @csrf_exempt
 def admin_login(request):
     if request.method == 'POST':
-        # For JSON data
         try:
             data = json.loads(request.body)
             username = data.get('username')
@@ -76,26 +82,18 @@ def admin_login(request):
         except json.JSONDecodeError:
             return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
 
-        # For form data
-        # username = request.POST.get('username')
-        # password = request.POST.get('password')
-
-        # Your authentication logic here
         if username and password:
             user = authenticate(request, username=username, password=password)
             if user is not None:
-                # Authentication successful
                 login(request, user)
-                return JsonResponse({'success': True, 'usertype': user.user_type})
+                token, created = Token.objects.get_or_create(user=user)
+                return JsonResponse({'success': True, 'usertype': user.user_type, 'token': token.key})
             else:
-                # Authentication failed
                 return JsonResponse({'success': False, 'message': 'Invalid credentials'}, status=400)
         else:
             return JsonResponse({'success': False, 'message': 'Username or password missing'}, status=400)
     else:
         return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
-    
-
 
 @csrf_exempt
 def get_seekers(request):
@@ -335,33 +333,65 @@ def remove_seeker(request):
     else:
         return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
 
-@login_required
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def get_admin_details(request):
     user = request.user
-    if user.is_authenticated:
-        print(f"Authenticated user: {user.username}")
-    else:
-        print("User is not authenticated")
-    return JsonResponse({
+    return Response({
         'username': user.username,
-        'email': user.email if user.email else 'no email registered'
+        'email': user.email if user.email else ''
     })
 
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 @csrf_exempt
-@login_required
 def update_admin_details(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             user = request.user
-            user.username = data.get('username', user.username)
-            email = data.get('email', '').strip()
-            user.email = email if email != 'no email registered' else ''
+            username = data.get('username')
+            email = data.get('email')
+
+            if username:
+                user.username = username
+            if email:
+                user.email = email
+
             user.save()
+
             return JsonResponse({'success': True, 'message': 'Profile updated successfully'})
         except json.JSONDecodeError:
             return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
     else:
         return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
-
     
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@csrf_exempt
+def reset_password(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user = request.user
+            password = data.get('password')
+
+            if password:
+                user.password = make_password(password)
+
+            user.save()
+
+            return JsonResponse({'success': True, 'message': 'Password updated successfully'})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
