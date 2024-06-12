@@ -21,4 +21,7 @@ urlpatterns = [
     path('api/auth/', include('rest_framework.urls')),
     path('api/token/', include('djoser.urls.authtoken')),
     path('api/reset-password/', views.reset_password, name='reset-password'),
+    path('api/post-job/', views.post_job, name='post-job'),
+    path('api/posted-jobs/', views.get_posted_jobs, name='get_posted_jobs'),
+
 ]

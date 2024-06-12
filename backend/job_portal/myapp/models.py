@@ -55,3 +55,15 @@ class ApprovedEmployer(models.Model):
 
     def __str__(self):
         return self.name
+    
+class JobPost(models.Model):
+    job_designation = models.CharField(max_length=255)
+    description = models.TextField()
+    image = models.ImageField(upload_to='job_images/')
+    posting_date = models.DateField()
+    last_date_to_apply = models.DateField()
+    other_requirements = models.TextField()
+    posted_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.job_designation

@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from. models import Seeker,Employer,CustomUser,ApprovedSeeker,ApprovedEmployer
+from. models import Seeker,Employer,CustomUser,ApprovedSeeker,ApprovedEmployer,JobPost
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
@@ -20,6 +20,10 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.views.decorators.csrf import csrf_protect
+from django.core.files.base import ContentFile
+import base64
+from datetime import date
+import logging
 
 
 @csrf_exempt
@@ -185,14 +189,14 @@ def approve_employer(request):
                 custom_employer, created = CustomUser.objects.get_or_create(
                     username=employer.name,
                     email=employer.email,
-                    password=employer.password,
+                    password= make_password(employer.password),
                     user_type=employer.user_type
                 )
                 approved_employer, created = ApprovedEmployer.objects.get_or_create(
                     name=employer.name,
                     email=employer.email,
                     mobile=employer.mobile,
-                    password=employer.password,
+                    password=make_password(employer.password),
                     logo=employer.logo,
                     website=employer.website,
                     address=employer.address,
@@ -395,3 +399,71 @@ def reset_password(request):
             return JsonResponse({'success': False, 'message': str(e)}, status=500)
     else:
         return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
+    
+
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def post_job(request):
+    try:
+        data = request.data
+        
+        
+        user = request.user
+        
+
+        job_designation = data.get('jobDesignation')
+        description = data.get('description')
+        posting_date = data.get('postingDate')
+        last_date_to_apply = data.get('lastDateToApply')
+        other_requirements = data.get('otherRequirements')
+        
+        image = data.get('image')
+        image_format, image_str = image.split(';base64,') 
+        ext = image_format.split('/')[-1] 
+        image_data = ContentFile(base64.b64decode(image_str), name='temp.' + ext)
+        
+
+        job_post = JobPost(
+            job_designation=job_designation,
+            description=description,
+            posting_date=posting_date,
+            last_date_to_apply=last_date_to_apply,
+            other_requirements=other_requirements,
+            image=image_data,
+            posted_by=user
+        )
+        
+        job_post.save()
+       
+
+        return Response({'success': True, 'message': 'Job posted successfully'})
+    except Exception as e:
+        
+        return Response({'success': False, 'message': str(e)}, status=500)
+    
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_posted_jobs(request):
+    try:
+        user = request.user
+        jobs = JobPost.objects.filter(posted_by=user)
+        
+        # Construct the response data manually
+        jobs_data = []
+        for job in jobs:
+            jobs_data.append({
+                'id': job.id,
+                'job_designation': job.job_designation,
+                'description': job.description,
+                'posting_date': job.posting_date,
+                'last_date_to_apply': job.last_date_to_apply,
+                'other_requirements': job.other_requirements,
+            })
+        
+        return JsonResponse(jobs_data, safe=False)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
