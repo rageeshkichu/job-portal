@@ -24,6 +24,7 @@ from django.core.files.base import ContentFile
 import base64
 from datetime import date
 import logging
+from django.views.decorators.http import require_http_methods
 
 
 @csrf_exempt
@@ -465,5 +466,91 @@ def get_posted_jobs(request):
             })
         
         return JsonResponse(jobs_data, safe=False)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_posted_jobs(request):
+    try:
+        user = request.user
+        jobs = JobPost.objects.filter(posted_by=user)
+        
+        # Construct the response data manually
+        jobs_data = []
+        for job in jobs:
+            jobs_data.append({
+                'id': job.id,
+                'job_designation': job.job_designation,
+                'description': job.description,
+                'posting_date': job.posting_date,
+                'last_date_to_apply': job.last_date_to_apply,
+                'other_requirements': job.other_requirements,
+            })
+        
+        return JsonResponse(jobs_data, safe=False)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_job_details(request, job_id):
+    try:
+        user = request.user
+        job = JobPost.objects.get(id=job_id, posted_by=user)
+        job_data = {
+            'job_designation': job.job_designation,
+            'description': job.description,
+            'posting_date': job.posting_date,
+            'last_date_to_apply': job.last_date_to_apply,
+            'other_requirements': job.other_requirements,
+        }
+        return JsonResponse(job_data)
+    except JobPost.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Job not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    
+@api_view(['PUT'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def edit_job(request, job_id):
+    try:
+        user = request.user
+        job = JobPost.objects.get(id=job_id, posted_by=user)
+        data = json.loads(request.body)
+        
+        job.job_designation = data.get('job_designation', job.job_designation)
+        job.description = data.get('description', job.description)
+        job.posting_date = data.get('posting_date', job.posting_date)
+        job.last_date_to_apply = data.get('last_date_to_apply', job.last_date_to_apply)
+        job.other_requirements = data.get('other_requirements', job.other_requirements)
+        
+        job.save()
+        return JsonResponse({'success': True, 'message': 'Job updated successfully'})
+    except JobPost.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Job not found'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    
+@require_http_methods(["DELETE"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@csrf_exempt
+def delete_job(request, job_id):
+    try:
+        # Check if the job exists and belongs to the logged-in user
+        job = JobPost.objects.get(id=job_id)
+        job.delete()
+        return JsonResponse({'success': True, 'message': 'Job deleted successfully'})
+    except JobPost.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Job not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)

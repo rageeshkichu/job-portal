@@ -23,5 +23,8 @@ urlpatterns = [
     path('api/reset-password/', views.reset_password, name='reset-password'),
     path('api/post-job/', views.post_job, name='post-job'),
     path('api/posted-jobs/', views.get_posted_jobs, name='get_posted_jobs'),
-
+    path('api/posted-jobs/', views.get_posted_jobs, name='get_posted_jobs'),
+    path('api/job-details/<int:job_id>/', views.get_job_details, name='get_job_details'),
+    path('api/edit-job/<int:job_id>/', views.edit_job, name='edit_job'),
+    path('api/delete-job/<int:job_id>/', views.delete_job, name='delete_job'),
 ]
