@@ -27,4 +27,6 @@ urlpatterns = [
     path('api/job-details/<int:job_id>/', views.get_job_details, name='get_job_details'),
     path('api/edit-job/<int:job_id>/', views.edit_job, name='edit_job'),
     path('api/delete-job/<int:job_id>/', views.delete_job, name='delete_job'),
+    path('posted-jobs/', views.posted_jobs, name='posted-jobs'),
+    path('api/job-approvals/', views.job_approvals, name='job-approvals'),
 ]

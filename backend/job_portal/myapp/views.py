@@ -554,3 +554,42 @@ def delete_job(request, job_id):
         return JsonResponse({'success': False, 'message': 'Job not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    
+@require_http_methods(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def posted_jobs(request):
+    employer = request.user 
+    jobs = JobPost.objects.filter(employer=employer)
+    job_list = [
+        {
+            "id": job.id,
+            "job_designation": job.job_designation,
+            "description": job.description,
+            "posting_date": job.posting_date,
+            "last_date_to_apply": job.last_date_to_apply,
+            "other_requirements": job.other_requirements
+        }
+        for job in jobs
+    ]
+    return JsonResponse(job_list, safe=False)
+
+@api_view(['GET'])
+def job_approvals(request):
+    try:
+        jobs = JobPost.objects.all()
+        jobs_data = []
+        for job in jobs:
+            jobs_data.append({
+                'id': job.id,
+                'job_designation': job.job_designation,
+                'description': job.description,
+                'posting_date': job.posting_date,
+                'last_date_to_apply': job.last_date_to_apply,
+                'other_requirements': job.other_requirements,
+                'posted_by':job.posted_by.username
+            })
+        
+        return JsonResponse(jobs_data, safe=False)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
