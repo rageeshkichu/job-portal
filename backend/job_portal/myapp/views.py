@@ -445,30 +445,6 @@ def post_job(request):
         return Response({'success': False, 'message': str(e)}, status=500)
     
 
-@api_view(['GET'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def get_posted_jobs(request):
-    try:
-        user = request.user
-        jobs = JobPost.objects.filter(posted_by=user)
-        
-        # Construct the response data manually
-        jobs_data = []
-        for job in jobs:
-            jobs_data.append({
-                'id': job.id,
-                'job_designation': job.job_designation,
-                'description': job.description,
-                'posting_date': job.posting_date,
-                'last_date_to_apply': job.last_date_to_apply,
-                'other_requirements': job.other_requirements,
-            })
-        
-        return JsonResponse(jobs_data, safe=False)
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=500)
-
 
 
 @api_view(['GET'])
@@ -489,6 +465,7 @@ def get_posted_jobs(request):
                 'posting_date': job.posting_date,
                 'last_date_to_apply': job.last_date_to_apply,
                 'other_requirements': job.other_requirements,
+                'status':job.status,
             })
         
         return JsonResponse(jobs_data, safe=False)
@@ -577,7 +554,58 @@ def posted_jobs(request):
 @api_view(['GET'])
 def job_approvals(request):
     try:
-        jobs = JobPost.objects.all()
+        jobs = JobPost.objects.filter(status = 'pending')
+        jobs_data = []
+        for job in jobs:
+            jobs_data.append({
+                'id': job.id,
+                'job_designation': job.job_designation,
+                'description': job.description,
+                'posting_date': job.posting_date,
+                'last_date_to_apply': job.last_date_to_apply,
+                'other_requirements': job.other_requirements,
+                'posted_by':job.posted_by.username
+            })
+        
+        return JsonResponse(jobs_data, safe=False)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    
+@require_http_methods(["POST"])
+@csrf_exempt
+def approve_job(request):
+    try:
+        data = json.loads(request.body)
+        job_id = data.get('job_id')
+        job = JobPost.objects.get(id=job_id)
+        job.status = 'approved'
+        job.save()
+        return JsonResponse({"success": True})
+    except JobPost.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Job not found"})
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)})
+    
+@require_http_methods(["POST"])
+@csrf_exempt
+def reject_job(request):
+    try:
+        data = json.loads(request.body)
+        job_id = data.get('job_id')
+        job = JobPost.objects.get(id=job_id)
+        job.status = 'rejected'
+        job.save()
+        return JsonResponse({"success": True})
+    except JobPost.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Job not found"})
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)})
+    
+
+@api_view(['GET'])
+def all_jobs(request):
+    try:
+        jobs = JobPost.objects.filter(status = 'approved')
         jobs_data = []
         for job in jobs:
             jobs_data.append({

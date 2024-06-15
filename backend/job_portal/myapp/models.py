@@ -64,6 +64,7 @@ class JobPost(models.Model):
     last_date_to_apply = models.DateField()
     other_requirements = models.TextField()
     posted_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    status = models.CharField(max_length=255, default="pending")
 
     def __str__(self):
         return self.job_designation
