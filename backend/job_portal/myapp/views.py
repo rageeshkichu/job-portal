@@ -621,3 +621,24 @@ def all_jobs(request):
         return JsonResponse(jobs_data, safe=False)
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    
+
+@api_view(['GET'])
+def seeker_view_jobs(request):
+    try:
+        jobs = JobPost.objects.filter(status = 'approved')
+        jobs_data = []
+        for job in jobs:
+            jobs_data.append({
+                'id': job.id,
+                'job_designation': job.job_designation,
+                'description': job.description,
+                'posting_date': job.posting_date,
+                'last_date_to_apply': job.last_date_to_apply,
+                'other_requirements': job.other_requirements,
+                'posted_by':job.posted_by.username
+            })
+        
+        return JsonResponse(jobs_data, safe=False)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
