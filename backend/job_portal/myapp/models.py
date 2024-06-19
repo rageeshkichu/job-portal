@@ -68,3 +68,12 @@ class JobPost(models.Model):
 
     def __str__(self):
         return self.job_designation
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
+    qualification = models.CharField(max_length=255, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.user.username

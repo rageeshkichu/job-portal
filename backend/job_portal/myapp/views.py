@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from. models import Seeker,Employer,CustomUser,ApprovedSeeker,ApprovedEmployer,JobPost
+from. models import Seeker,Employer,CustomUser,ApprovedSeeker,ApprovedEmployer,JobPost,UserProfile
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
@@ -642,3 +642,48 @@ def seeker_view_jobs(request):
         return JsonResponse(jobs_data, safe=False)
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_user_profile(request):
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        user_profile = UserProfile.objects.create(user=request.user)
+    
+    profile_picture_url = ''
+    if user_profile.profile_picture:
+        profile_picture_url = request.build_absolute_uri(user_profile.profile_picture.url)
+    
+    profile_data = {
+        'qualification': user_profile.qualification,
+        'address': user_profile.address,
+        'profile_picture': profile_picture_url
+    }
+    return Response(profile_data)
+
+@csrf_exempt
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def update_user_profile(request):
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        user_profile = UserProfile.objects.create(user=request.user)
+    
+    if 'qualification' in request.data:
+        user_profile.qualification = request.data['qualification']
+    if 'address' in request.data:
+        user_profile.address = request.data['address']
+    
+    if 'profile_picture' in request.data and request.data['profile_picture']:
+        format, imgstr = request.data['profile_picture'].split(';base64,')
+        ext = format.split('/')[-1]
+        user_profile.profile_picture = ContentFile(base64.b64decode(imgstr), name=f'{request.user.username}.{ext}')
+    
+    user_profile.save()
+    
+    return Response({"success": True})
