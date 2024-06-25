@@ -38,12 +38,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'myapp',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
     'djoser',
+    'myapp',
 ]
+
+AUTH_USER_MODEL = 'myapp.CustomUser'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -101,7 +103,7 @@ WSGI_APPLICATION = 'job_portal.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'job_portal',
+        'NAME': 'job',
         'USER': 'root',
         'PASSWORD': '',
         'HOST': 'localhost',
@@ -152,7 +154,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
-AUTH_USER_MODEL = 'myapp.CustomUser'
+
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

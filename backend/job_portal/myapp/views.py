@@ -84,12 +84,16 @@ def admin_login(request):
             data = json.loads(request.body)
             username = data.get('username')
             password = data.get('password')
+            print(username)
+            print(password)
         except json.JSONDecodeError:
             return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
 
         if username and password:
             user = authenticate(request, username=username, password=password)
+            print(user)
             if user is not None:
+                print('user exist')
                 login(request, user)
                 token, created = Token.objects.get_or_create(user=user)
                 return JsonResponse({'success': True, 'usertype': user.user_type, 'token': token.key})
