@@ -77,3 +77,8 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+    
+class AppliedJobs(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    job = models.ForeignKey(JobPost, on_delete=models.CASCADE)
+    applied_on = models.DateTimeField(auto_now_add=True)

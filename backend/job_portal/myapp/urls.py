@@ -35,4 +35,6 @@ urlpatterns = [
     path('api/seeker-view-jobs/', views.seeker_view_jobs, name='seeker-view-jobs'),
     path('api/get-user-profile/', views.get_user_profile, name='get-user-profile'),
     path('api/update-user-profile/', views.update_user_profile, name='update-user-profile'),
+    path('api/apply-job/', views.apply_job, name='apply-job'),
+    path('api/view-applied-jobs/', views.view_applied_jobs, name='view-applied-jobs'),
 ]

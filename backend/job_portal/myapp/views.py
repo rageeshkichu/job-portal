@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from. models import Seeker,Employer,CustomUser,ApprovedSeeker,ApprovedEmployer,JobPost,UserProfile
+from. models import Seeker,Employer,CustomUser,ApprovedSeeker,ApprovedEmployer,JobPost,UserProfile,AppliedJobs
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
@@ -691,3 +691,55 @@ def update_user_profile(request):
     user_profile.save()
     
     return Response({"success": True})
+
+@csrf_exempt
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def apply_job(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            job_id = data.get('job_id')
+            user = request.user
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+        
+        if job_id:
+            try:
+                job = JobPost.objects.get(id=job_id)
+                AppliedJobs.objects.create(user=user, job=job)
+                return JsonResponse({'success': True, 'message': 'Application submitted successfully'})
+            except JobPost.DoesNotExist:
+                return JsonResponse({'success': False, 'message': 'Job not found'}, status=404)
+        else:
+            return JsonResponse({'success': False, 'message': 'Job ID missing'}, status=400)
+    else:
+        return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+    
+@csrf_exempt
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def view_applied_jobs(request):
+    if request.method == 'GET':
+        user = request.user
+        applied_jobs = AppliedJobs.objects.filter(user=user).select_related('job')
+        applied_jobs_data = [
+            {
+                'id': applied_job.id,
+                'job': {
+                    'job_designation': applied_job.job.job_designation,
+                    'description': applied_job.job.description,
+                    'posting_date': applied_job.job.posting_date,
+                    'last_date_to_apply': applied_job.job.last_date_to_apply,
+                    'other_requirements': applied_job.job.other_requirements,
+                    'posted_by': applied_job.job.posted_by.username,  # Assuming `posted_by` is a ForeignKey to User model
+                },
+                'applied_on': applied_job.applied_on,
+            }
+            for applied_job in applied_jobs
+        ]
+        return JsonResponse(applied_jobs_data, safe=False)
+    else:
+        return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
