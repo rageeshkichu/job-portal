@@ -734,12 +734,41 @@ def view_applied_jobs(request):
                     'posting_date': applied_job.job.posting_date,
                     'last_date_to_apply': applied_job.job.last_date_to_apply,
                     'other_requirements': applied_job.job.other_requirements,
-                    'posted_by': applied_job.job.posted_by.username,  # Assuming `posted_by` is a ForeignKey to User model
+                    'posted_by': applied_job.job.posted_by.username, 
                 },
                 'applied_on': applied_job.applied_on,
+                'status':applied_job.status
             }
             for applied_job in applied_jobs
         ]
         return JsonResponse(applied_jobs_data, safe=False)
     else:
         return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+    
+@csrf_exempt
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def vieww_applied_jobs(request):
+    user = request.user
+    try:
+        applied_jobs = AppliedJobs.objects.filter(user=user).select_related('job')
+        job_list = [
+            {
+                'id': applied_job.job.id,
+                'job_designation': applied_job.job.job_designation,
+                'description': applied_job.job.description,
+                'posting_date': applied_job.job.posting_date,
+                'last_date_to_apply': applied_job.job.last_date_to_apply,
+                'other_requirements': applied_job.job.other_requirements,
+                'posted_by': applied_job.job.posted_by.username,
+            }
+            for applied_job in applied_jobs
+        ]
+        print(job_list)
+        return JsonResponse(job_list, safe=False)
+    except AppliedJobs.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'No applied jobs found'}, status=404)
+    except Exception as e:
+        print(f"Error fetching applied jobs: {e}")
+        return JsonResponse({'success': False, 'message': 'Error fetching applied jobs'}, status=500)
