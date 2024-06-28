@@ -38,4 +38,6 @@ urlpatterns = [
     path('api/apply-job/', views.apply_job, name='apply-job'),
     path('api/view-applied-jobs/', views.view_applied_jobs, name='view-applied-jobs'),
     path('api/vieww-applied-jobs/', views.vieww_applied_jobs, name='view-applied-jobs'),
+    path('api/employer-view-applications/', views.employer_view_applications, name='employer-view-applications'),
+    path('api/get-applicant-details/<int:id>/', views.get_applicant_details, name='get_applicant_details'),
 ]

@@ -81,5 +81,6 @@ class UserProfile(models.Model):
 class AppliedJobs(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     job = models.ForeignKey(JobPost, on_delete=models.CASCADE)
+    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE,default="")
     applied_on = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=255, default="pending")

@@ -708,7 +708,8 @@ def apply_job(request):
         if job_id:
             try:
                 job = JobPost.objects.get(id=job_id)
-                AppliedJobs.objects.create(user=user, job=job)
+                user_profile = UserProfile.objects.get(user = user)
+                AppliedJobs.objects.create(user=user, job=job,user_profile=user_profile)
                 return JsonResponse({'success': True, 'message': 'Application submitted successfully'})
             except JobPost.DoesNotExist:
                 return JsonResponse({'success': False, 'message': 'Job not found'}, status=404)
@@ -772,3 +773,50 @@ def vieww_applied_jobs(request):
     except Exception as e:
         print(f"Error fetching applied jobs: {e}")
         return JsonResponse({'success': False, 'message': 'Error fetching applied jobs'}, status=500)
+    
+
+@csrf_exempt
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def employer_view_applications(request):
+    if request.method == 'GET':
+        user = request.user
+        job_posts = JobPost.objects.filter(posted_by=user)
+        applied_jobs = AppliedJobs.objects.filter(job__in=job_posts).select_related('job', 'user')
+        
+        applications = []
+        for application in applied_jobs:
+            applications.append({
+                'job_designation': application.job.job_designation,
+                'job_description': application.job.description,
+                'applicant_name': application.user.username,
+                'application_date': application.applied_on,
+                'id':application.id
+            })
+
+        return JsonResponse(applications, safe=False)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+    
+@csrf_exempt
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_applicant_details(request, id):
+    try:
+        applied_job = AppliedJobs.objects.get(pk=id)
+        applied_job.status = 'viewed'
+        applied_job.save()
+        applicant = {
+            'applicant_name': applied_job.user.username,
+            'applicant_qualification':applied_job.user_profile.qualification,
+            'applicant_address':applied_job.user_profile.address,
+            'application_date': applied_job.applied_on,
+            'job_designation': applied_job.job.job_designation,
+            'job_description': applied_job.job.description,
+        }
+
+        return JsonResponse(applicant)
+    except AppliedJobs.DoesNotExist:
+        return JsonResponse({'error': 'Application not found'}, status=404)
