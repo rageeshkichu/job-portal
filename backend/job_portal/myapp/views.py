@@ -815,6 +815,7 @@ def get_applicant_details(request, id):
             'application_date': applied_job.applied_on,
             'job_designation': applied_job.job.job_designation,
             'job_description': applied_job.job.description,
+            'status':applied_job.status
         }
 
         return JsonResponse(applicant)
@@ -822,23 +823,18 @@ def get_applicant_details(request, id):
         return JsonResponse({'error': 'Application not found'}, status=404)
     
 @csrf_exempt
-@api_view(['GET'])
+@api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def get_applicant_details(request, id):
+def update_application_status(request):
     try:
-        applied_job = AppliedJobs.objects.get(pk=id)
-        applied_job.status = 'viewed'
-        applied_job.save()
-        applicant = {
-            'applicant_name': applied_job.user.username,
-            'applicant_qualification':applied_job.user_profile.qualification,
-            'applicant_address':applied_job.user_profile.address,
-            'application_date': applied_job.applied_on,
-            'job_designation': applied_job.job.job_designation,
-            'job_description': applied_job.job.description,
-        }
-
-        return JsonResponse(applicant)
+        application_id = request.data.get('id')
+        status = request.data.get('status')
+        application = AppliedJobs.objects.get(id=application_id)
+        application.status = status
+        application.save()
+        return Response({'success': True, 'message': 'Status updated successfully'})
     except AppliedJobs.DoesNotExist:
-        return JsonResponse({'error': 'Application not found'}, status=404)
+        return Response({'success': False, 'message': 'Application not found'}, status=404)
+    except Exception as e:
+        return Response({'success': False, 'message': str(e)}, status=400)

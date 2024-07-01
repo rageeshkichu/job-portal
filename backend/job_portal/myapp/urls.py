@@ -40,4 +40,5 @@ urlpatterns = [
     path('api/vieww-applied-jobs/', views.vieww_applied_jobs, name='view-applied-jobs'),
     path('api/employer-view-applications/', views.employer_view_applications, name='employer-view-applications'),
     path('api/get-applicant-details/<int:id>/', views.get_applicant_details, name='get_applicant_details'),
+    path('api/update-application-status/', views.update_application_status, name='update-application-status'),
 ]
