@@ -838,3 +838,20 @@ def update_application_status(request):
         return Response({'success': False, 'message': 'Application not found'}, status=404)
     except Exception as e:
         return Response({'success': False, 'message': str(e)}, status=400)
+
+@csrf_exempt
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def update_application_status(request):
+    try:
+        application_id = request.data.get('id')
+        status = request.data.get('status')
+        application = AppliedJobs.objects.get(id=application_id)
+        application.status = status
+        application.save()
+        return Response({'success': True, 'message': 'Status updated successfully'})
+    except AppliedJobs.DoesNotExist:
+        return Response({'success': False, 'message': 'Application not found'}, status=404)
+    except Exception as e:
+        return Response({'success': False, 'message': str(e)}, status=400)
