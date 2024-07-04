@@ -839,19 +839,21 @@ def update_application_status(request):
     except Exception as e:
         return Response({'success': False, 'message': str(e)}, status=400)
 
+
 @csrf_exempt
-@api_view(['POST'])
+@api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def update_application_status(request):
-    try:
-        application_id = request.data.get('id')
-        status = request.data.get('status')
-        application = AppliedJobs.objects.get(id=application_id)
-        application.status = status
-        application.save()
-        return Response({'success': True, 'message': 'Status updated successfully'})
-    except AppliedJobs.DoesNotExist:
-        return Response({'success': False, 'message': 'Application not found'}, status=404)
-    except Exception as e:
-        return Response({'success': False, 'message': str(e)}, status=400)
+def employer_view_notifications(request):
+    if request.method == 'GET':
+        jobs = AppliedJobs.objects.filter(job__posted_by=request.user, status='accepted')
+        notifications = [
+            {
+                'job_designation': job.job.job_designation,
+                'applicant_name': job.user.username,
+                'updated_at': job.applied_on,
+                'status':job.status
+            }
+        for job in jobs]
+        return JsonResponse(notifications, safe=False)
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
