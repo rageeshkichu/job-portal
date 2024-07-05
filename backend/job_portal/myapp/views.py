@@ -857,3 +857,21 @@ def employer_view_notifications(request):
         for job in jobs]
         return JsonResponse(notifications, safe=False)
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def seeker_view_notifications(request):
+    if request.method == 'GET':
+        jobs = AppliedJobs.objects.filter(user=request.user, status='accepted')
+        notifications = [
+            {
+                'job_designation': job.job.job_designation,
+                'company': job.job.posted_by.username,  # Assuming posted_by is a ForeignKey to Employer with company_name attribute
+                'status': job.status,
+                'updated_at': job.applied_on
+            }
+        for job in jobs]
+        return JsonResponse(notifications, safe=False)
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
