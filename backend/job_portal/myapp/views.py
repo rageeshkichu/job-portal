@@ -28,6 +28,40 @@ from django.views.decorators.http import require_http_methods
 
 
 @csrf_exempt
+def check_seeker(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')
+        mobile = data.get('mobile')
+        
+        email_exists = ApprovedSeeker.objects.filter(email=email).exists()
+        mobile_exists = ApprovedSeeker.objects.filter(mobile=mobile).exists()
+        
+        if email_exists or mobile_exists:
+            return JsonResponse({'exists': True})
+        
+        return JsonResponse({'exists': False})
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def check_employer(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')
+        mobile = data.get('mobile')
+        
+        email_exists = ApprovedEmployer.objects.filter(email=email).exists()
+        mobile_exists = ApprovedEmployer.objects.filter(mobile=mobile).exists()
+        
+        if email_exists or mobile_exists:
+            return JsonResponse({'exists': True})
+        
+        return JsonResponse({'exists': False})
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@csrf_exempt
 def register_seeker(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -609,9 +643,10 @@ def reject_job(request):
 @api_view(['GET'])
 def all_jobs(request):
     try:
-        jobs = JobPost.objects.filter(status = 'approved')
+        jobs = JobPost.objects.filter(status='approved')
         jobs_data = []
         for job in jobs:
+            application_count = AppliedJobs.objects.filter(job=job).count()
             jobs_data.append({
                 'id': job.id,
                 'job_designation': job.job_designation,
@@ -619,7 +654,8 @@ def all_jobs(request):
                 'posting_date': job.posting_date,
                 'last_date_to_apply': job.last_date_to_apply,
                 'other_requirements': job.other_requirements,
-                'posted_by':job.posted_by.username
+                'posted_by': job.posted_by.username,
+                'application_count': application_count
             })
         
         return JsonResponse(jobs_data, safe=False)

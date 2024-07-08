@@ -3,7 +3,9 @@ from . import views
 from .views import register_seeker,register_employer,admin_login,get_seekers,get_employers,approve_seeker,approve_employer,all_seekers,all_employers
 
 urlpatterns = [
+    path('api/check-seeker/', views.check_seeker, name='check-seeker'),
     path('api/register-seeker/', views.register_seeker, name='register_seeker'),
+    path('api/check-employer/', views.check_employer, name='check-employer'),
     path('api/register-employer/', register_employer, name='register-employer'),
     path('api/login/', admin_login, name='login'),
     path('api/get-seekers/', get_seekers, name='get_seekers'),
